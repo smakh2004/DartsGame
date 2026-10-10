@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Darts vs. Jack</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="game" tabindex="0"></canvas>
+
+  <!-- Audio unlock: must load BEFORE rive.js.
+       Remembers every AudioContext the Rive runtime creates and resumes them
+       on the first click / key / touch (browsers start them muted). -->
+  <script>
+    (function () {
+      const Base = window.AudioContext || window.webkitAudioContext;
+      if (!Base) return;
+      const contexts = [];
+      class TrackedAudioContext extends Base {
+        constructor(...args) {
+          super(...args);
+          contexts.push(this);
+          console.log("AudioContext created:", this.state);
+        }
+      }
+      window.AudioContext = TrackedAudioContext;
+      window.webkitAudioContext = TrackedAudioContext;
+      window.__audioContexts = contexts;
+
+      function resumeAll() {
+        contexts.forEach((c) => {
+          if (c.state === "suspended") {
+            c.resume().then(() => console.log("AudioContext:", c.state));
+          }
+        });
+      }
+      ["pointerdown", "keydown", "touchend"].forEach((e) =>
+        document.addEventListener(e, resumeAll, true)
+      );
+    })();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@rive-app/webgl2@2.44.1/rive.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
