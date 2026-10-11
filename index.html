@@ -7,7 +7,9 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <canvas id="game" tabindex="0"></canvas>
+  <!-- No tabindex here: main.js adds it only on devices with a real mouse,
+       so phones never focus the canvas and never open the keyboard. -->
+  <canvas id="game" inputmode="none"></canvas>
 
   <!-- Audio unlock: must load BEFORE rive.js.
        Remembers every AudioContext the Rive runtime creates and resumes them

@@ -6,6 +6,37 @@ const SOUND_EXT = ".mp3";       // change to ".wav" if your files are .wav
 const canvas = document.getElementById("game");
 let r = null;
 
+// ---------- Touch vs. mouse ----------
+// Phones/tablets: never give the canvas keyboard focus, otherwise the
+// on-screen keyboard pops up on every tap.
+const IS_TOUCH =
+  window.matchMedia("(pointer: coarse)").matches ||
+  ("ontouchstart" in window && !window.matchMedia("(pointer: fine)").matches);
+
+if (!IS_TOUCH) {
+  canvas.tabIndex = 0; // desktop: allow keyboard controls
+}
+
+function focusCanvas() {
+  if (!IS_TOUCH) canvas.focus({ preventScroll: true });
+}
+
+// Safety net for phones: if anything (e.g. a hidden text field created by
+// the runtime) gets focus, blur it immediately so the keyboard stays closed.
+if (IS_TOUCH) {
+  document.addEventListener(
+    "focusin",
+    (e) => {
+      const el = e.target;
+      if (el && el !== document.body) {
+        if (el.setAttribute) el.setAttribute("inputmode", "none");
+        el.blur();
+      }
+    },
+    true
+  );
+}
+
 // ---------- Start the game ----------
 if (STATE_MACHINE) {
   startGame(STATE_MACHINE);
@@ -25,7 +56,7 @@ if (STATE_MACHINE) {
 }
 
 function startGame(sm) {
-  console.log("Using state machine:", sm);
+  console.log("Using state machine:", sm, "| touch device:", IS_TOUCH);
   r = new rive.Rive({
     src: RIV_FILE,
     canvas: canvas,
@@ -33,7 +64,7 @@ function startGame(sm) {
     autoplay: true,
     autoBind: true,
     enableGPUCanvas: true,
-    tabIndex: 0,
+    ...(IS_TOUCH ? {} : { tabIndex: 0 }), // keyboard input only on desktop
     layout: new rive.Layout({
       fit: rive.Fit.Layout,
       alignment: rive.Alignment.Center,
@@ -42,7 +73,7 @@ function startGame(sm) {
       r.resizeDrawingSurfaceToCanvas();
       if (r.artboard) r.artboard.volume = 1;
       connectSound();
-      canvas.focus();
+      focusCanvas();
     },
     onLoadError: (e) => console.error("Rive load error:", e),
   });
@@ -128,5 +159,8 @@ window.addEventListener("resize", () => {
   t = setTimeout(() => r && r.resizeDrawingSurfaceToCanvas(), 100);
 });
 
-canvas.addEventListener("pointerdown", () => canvas.focus());
+// Only mouse clicks give the canvas focus; touches never do.
+canvas.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse") focusCanvas();
+});
 canvas.addEventListener("contextmenu", (e) => e.preventDefault());
